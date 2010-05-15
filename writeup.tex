@@ -1,0 +1,185 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage{naaclhlt2010}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{textcomp}
+\setlength\titlebox{6.5cm}
+%\renewcommand{\baselinestretch}{0.96}
+
+
+\title{Fast Intersection}
+
+\author{
+	Adam Gerber \\
+	{\tt adam.gerber@jhu.edu}\\
+	Johns Hopkins University\\
+	3400 North Charles Street \\
+	Baltimore, MD 21210, USA\\
+	\And 
+	{Timur Sherif} \\
+	{\tt tsherif1@jhu.edu}\\
+	Johns Hopkins University\\
+	3400 North Charles Street \\
+	Baltimore, MD 21210, USA
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This paper proposes a novel set intersection algorithm
+especially effective for sparse sets over large range
+still maintains state of the art performance for dense sets over small range
+\end{abstract}
+
+\section{Introduction}
+The set intersection problem of two sets $A$ and $B$ is to find the set that contains all elements of $A$ that also appear in $B$, but no other elements. 
+
+Formally: 
+\[x \in A \cap B \iff x \in A \land x \in B\]
+
+This definition can be expanded to the intersection of multiple sets where the intersection is the set that contains all elements of one set that also appear in all other sets, but no other elements. This problem is often encountered in the context of the evaluation of relational queries to databases and search engines. A number of different approaches have been taken to this problem. Demain, et al [CITATION NECESSARY] proposed an intersection algorithm which intersects multiple sets in parallel. Barbay, et al propose using many algorithms with certain improvements and a type of interpolation search. They compared the performance between the various algorithms. The Baeza-Yates algorithm [CITATION NECESSARY] attempts to minimize the time of the search by using a recursive solution (on two sorted sets): using a binary search, search for the median element of the smaller set in the larger set and divide the problem into two subproblems. If the median of the smaller set exists in the larger set, add it to the intersection. Each of these algorithms use a specific search algorithm and then minimize the search space in some way. Udomchaiporn et al, proposed a different approach to the intersection of sorted sets using a comparison and elimination approach. Their algorithm repeatedly finds the maximum value of the first elements of each set and the minimum of the last elements of each set to limit the range. The common minimum or maximum values become elements of the intersection set.
+
+NEED TO CHANGE: In this article, we propose a new approach to the intersection problem by exploiting the properties of bit vectors to eliminate comparisons of ranges of numbers that do not overlap.
+
+
+(We maintain multiple indices over the set which allow us to do in-order traversals over the values of each column. )
+
+The article is structured as follows: In section 2, we present related works, in section 3 . . . . . . . . . . . 
+
+
+
+\section{Related Work}
+Demaine, et al, [CITATION] instead of focusing on the worst-case complexity of the intersection of sorted sets, considered the idea of complexity that depends on a particular instance. They developed the idea of a Proof (characterized in the paper) that a given set is the correct answer. The adaptive algorithms they present make no a priori assumptions and their running times are within a constant factor of optimal "with respect to a natural measure of the difficulty of the instance." 
+Baeza-Yates' et al algorithm [CITATION] was significantly simpler: for two sorted sets A and B, where B is small,  search the median of B in A. If found, add the element to the intersection set. Now, the problem is divided into two subproblems (the parts of the sets to the right and left of the median of B). Using this algorithm, they recursively solve both parts. 
+Barbay, et al, proposed a variant form of the Baeza-Yates algorithm which performs the intersection of more than two sorted arrays without sorting the intermediary results. According to them, this variant is significantly faster than the original algorithm in terms of number of comparisons performed and CPU time. They also tried to introduce value-based search algorithm to improve other intersection algorithms.
+Udomchaiporn, et al proposed a different approach to intersection of sorted sets by using a comparison and elimination approach to avoid using any search algorithms. This algorithm finds the maximum value of each first element of all sets and the minimum value of each last element in all sets. This limits the range of possible elements in the intersection set. If any minimum or maximum value is common to all sets, it gets added to the intersection set. This procedure is repeated until all values are eliminated.
+While all of these algorithms иииииииииииии..
+
+Context:
+abstract v. definite framework
+
+prolog or similar solver in which the algorithm provides the requestor with an iterator which when queried 
+
+
+metric: ratio of operations to results returned
+
+\section{Method}
+\subsection{Context}
+
+While most papers have described algorithms abstractly, with only a slight reference to their actual application, we propose this algorithm in the framework of a solver such as Prolog or a similar type of solver. We explore the algorithm in the context of returning an intersection, but it could just as easily provide the requestor with an iterator, which when queried could obtain any records associated with the key. A simple example of this would be a query on two tables to find all products that have a coupon (figure X). In this case, the algorithm would return an iterator over pids within the intersection: 
+
+\begin{enumerate}
+\item	1: (HDD x, a)
+\item	2: (HDD y, b), (HDD y, c)
+\item	4: (RAM a, d)
+\end{enumerate}
+
+
+\subsection{Algorithm}
+
+We introduce a tree structure for storing $m$-bit integer keys, where $m$ must be of the form $m=Di$ for some small integer $D$ and small integer $i=2^n$.  For example, to represent 32-bit integers, one such assignment could $i=2^2=8$ and $D=4$.  As such, it is possible to segment every $m$-bit integer into $d$ contiguous $i$-bit sequences.  We will use the notation $sig_i(key, j)$ to denote a $key$'s $j^{th}$ most significant $i$-bit sequence.  In other words, for any key $k_q$ in the range $2^{Di}$, the following serves as an identity, where $\oplus$ is the append operator:
+\[ k_q = sig_i(k_q, 0) \oplus sig_i(k_q, 1) \oplus ... \oplus sig_i(k_q, D-1) \]
+
+\subsubsection{Structure}
+For a tree T over the universe $0$ to $2^m - 1$, the root node encodes $sig_i(key, 0)$ in a bit vector of length $2^i$, with each bit corresponding to one of the $2^i$ combinations possible among $i$ bits.  For example, where $i=4$, the four bit sequence 0000 would correspond to the first position in the node's 16-element bit vector.  Just as the root node, with depth 0, encodes the sequence $sig_i(key, 0)$, similarly, nodes at depth 1 encode the sequence $sig_i(key, 1)$, and, in general, nodes at depth $d$ encode $sig_i(key, d)$; as a result, trees will have a depth of exactly $D$.
+
+\subsubsection{Vector Encoding}
+An ``on" (1) bit in the root node's bit vector indicates the existence of at least one key whose first $i$ bits match the $i$-bit combination indicated by the bit vector. Correspondingly, an ``off" bit (0) indicates the absence of any such element.  For example, in the case $i=4$, if the root node's bit vector is 1000000000000001, then the tree is guaranteed to contain at least one key $k_1$ with $sig_4(k_1, 0) = 0000$ and at least one key $k_2$ with $sig_4(k_2, 0)=1111$.
+
+\subsubsection{Branching}
+As each node
+
+
+\section{Conclusion}
+
+\section*{Acknowledgments}
+
+We would like to thank Wes Filardo
+
+
+
+
+
+
+
+\bibliographystyle{naaclhlt2010}
+\bibliography{amt}
+
+%\bigskip % This is to push the Appendix A section onto page 5. There's gotta be a better way.
+%\bigskip
+
+
+
+%\begin{figure}[h]
+%\small
+%\center
+%\begin{tabular}{|p{70mm}|}
+%\begin{enumerate}
+%%\setlength{\itemsep}{0pt}
+%\item The sentence expresses the relation. \\
+%Sentence: For the past eleven years, James has lived in Tucson. \\
+%$Relation$: ``Tucson'' is the residence of ``James''\\
+%\item The sentence does not express the relation.\\
+%\textit{Sentence}: Samuel first met Divya in 1990, while she was still a student.\\
+%\textit{Relation}: ``Divya'' is a spouse of ``Samuel''\\
+%\item The relation does not make sense.\\
+%\textit{Sentence}: Soojin was born in January.\\
+%\textit{Relation}: ``January'' is the birth place of ``Soojin'' \\
+%\end{enumerate}
+%\end{tabular}
+%\caption{\label{fig:response-types} The three annotation options; enumerated
+%with examples.}
+%\end{figure}
+
+
+
+%\subsection*{HIT Contents}
+%
+%The positive examples came from two sources.  For 
+%\textit{Experiment 1}, we used positive examples from the ACE \shortcite{ace_2004}
+%dataset. For \textit{Experiment 2}, we hand annotated examples from
+%the Tac KBP09 corpus. Figure \ref{fig:contrast-positives} presents the
+%contrast of these two types of positive examples.
+%
+%
+%\begin{figure}
+%\small
+%\center
+%\begin{tabular}{|p{70mm}|}
+%\hline
+%\textbf{TAC KBP 09 positive example:} \\ \hline
+%\textit{Sentence:} There was a flurry of activity as actress Suzanne Somers and her husband, Alan Hamel, pulled up to the front of their burned-out house in a black Cadillac Escalade.\\
+%\textit{Relation:} ``Suzanne Somers'' is/are a spouse of ``Alan Hamel.''\\ \hline
+%\textbf{ACE 2004 positive example:} \\ \hline
+%\textit{Sentence}: This afternoon the Soviet Union president's news spokesperson, Igor Najinko, attended the news conference. \\
+%\textit{Relation}:  ``president'' has/have a business relationship with ``spokesperson.'' \\
+%\hline
+%\end{tabular}
+%\caption{\label{fig:contrast-positives} Contrast of positive examples from the TAC and ACE corpora.}
+%\end{figure}
+%
+%\subsection*{Results}
+%
+%Experiment 1 used the ACE 2004 dataset for positive examples. For
+%these known examples with question type \textit{Expressed}, 35\% were
+%labeled as \textit{Nonsense}, and 14\% were labeled as \textit{Not Expressed}. 
+%Although we filtered out relations between pronoun
+%entity mentions, we chose to include relations between nominal entity
+%mentions. When composed into a sentence, these relations often lacked
+%a determiner for the nominal entity mention or were otherwise
+%expressed ungrammatically. We expect that these issues left the
+%workers undecided about how to label such examples. Figure
+%\ref{fig:contrast-positives} presents these issues through an example
+%ACE sentence/relation pair.
+
+
+\end{document}
+
+
+
