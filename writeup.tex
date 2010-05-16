@@ -56,6 +56,10 @@ The article is structured as follows: In section 2, we present related works, in
 
 
 \section{Related Work}
+As described above, there are many approaches to the intersection problem. Some of those more relevant to our approach are described in detail below. Demain, et al. proposed the Adaptive algorithm which searches for an element of a particular set from all other sets using a combination of ``galloping search`` and binary search. Essentially, the algorithm ``gallops`` in parallel through all the sets from both the low and high sides to find eliminators (elements possible in the intersection). ``Galloping consists of doubling the jump in position each iteration, until it overshoots the current eliminator which will be on the low side. Upon overshooting, the other parallel processes pause while the overshooter does a binary search to find the largest eliminatable element and chooses the next higher element as the new eliminator.`` This algorithm had applications to search engines, but many of the techniques used create negative impacts such as the high complexity of adapting to numerous sets of data. Barbay, et al.'s Sequential essentially uses a similar approach except for its use of the galloping search as described above. This performs less comparisons than the Adaptive algorithm on average. The Baeza-Yates algorithm takes the median element of the smaller of two sorted sets and uses a binary search to find it in the larger set. If the element is in the larger set, it is added to the intersection set. This algorithm then recursively solves the instances of each pair of subsets. Even though this algorithm is relatively fast, this causes the memory space used by this algorithm to be greater than any of the other algorithms. The Search-Free algorithm described by Udomchaiporn, et al. takes a different approach to intersecting sorted sets. It finds a maximum value of the first element of each set and the minimum value of the last element of each set. These two values become a range of possible elements in the intersection set. This process continues until the minimum and maximum are equal. In the intermediary step, if the the minimum or maximum element in one set matches the minimum or maximum element in all other sets, this element is added to the intersection set. The downside to this approach is that in sets that have large sections of elements that do not match, the algorithm must set all of these elements to null. This process proceeds in linear time with the size of the non-matching elements.
+All of these approaches have benefits when dealing with certain situations, but they essentially must compare elements one at a time. Therefore we propose an approach that compares elements in blocks to overcome this major limitation.
+
+
 Demaine, et al, [CITATION] instead of focusing on the worst-case complexity of the intersection of sorted sets, considered the idea of complexity that depends on a particular instance. They developed the idea of a Proof (characterized in the paper) that a given set is the correct answer. The adaptive algorithms they present make no a priori assumptions and their running times are within a constant factor of optimal "with respect to a natural measure of the difficulty of the instance." 
 Baeza-Yates' et al algorithm [CITATION] was significantly simpler: for two sorted sets A and B, where B is small,  search the median of B in A. If found, add the element to the intersection set. Now, the problem is divided into two subproblems (the parts of the sets to the right and left of the median of B). Using this algorithm, they recursively solve both parts. 
 Barbay, et al, proposed a variant form of the Baeza-Yates algorithm which performs the intersection of more than two sorted arrays without sorting the intermediary results. According to them, this variant is significantly faster than the original algorithm in terms of number of comparisons performed and CPU time. They also tried to introduce value-based search algorithm to improve other intersection algorithms.
@@ -82,39 +86,83 @@ While most papers have described algorithms abstractly, with only a slight refer
 \end{enumerate}
 
 
-\subsection{Algorithm}
+\subsection{Definitions}
 
-We introduce a tree structure for storing $m$-bit integer keys, where $m$ must be of the form $m=Di$ for some small integer $D$ and small integer $i=2^n$.  For example, to represent 32-bit integers, one such assignment could $i=2^3=8$ and $D=4$.  As such, it is possible to segment every $m$-bit integer into $d$ contiguous $i$-bit sequences.  We will use the notation $sig_i(key, j)$ to denote a $key$'s $j^{th}$ most significant $i$-bit sequence.  In other words, for any key $k_q$ in the range $2^{Di}$, the following serves as an identity, where $\oplus$ is the append operator:
+We introduce a tree structure for storing $m$-bit integer keys,
+where $m$ must be of the form $m=Di$ for some small
+integers $D, i,$ and $n$, such that $i=2^n$.  For example,
+to represent 32-bit integers, one such assignment would be
+$n=3, i=2^n=8,$ and $D=4$.  As such, it is possible to segment
+every $m$-bit integer into $d$ contiguous $i$-bit sequences.
+We will use the notation $sig_i(key, j)$ to denote a $key$'s
+$j^{th}$ most significant $i$-bit sequence.  In other words,
+for any key $k_q$ in the range $2^{Di}$, the following serves as
+an identity, where $\oplus$ is the append operator:
+
 \[ k_q = sig_i(k_q, 0) \oplus sig_i(k_q, 1) \oplus ... \oplus sig_i(k_q, D-1) \]
 
 %TODO finish this formal definition of the tree
-%Formally, a tree $T$ consists of the following components: a finite set $N$ of nodes, a , = consists of a this structure consists of represents nodes as tuples of the form $(c, m, p)$, where $c \in [0, 2^{2^i}]$ indicates the current bit configuration, $m$ is the number of leaf nodes (equivalent to the number of unique keys that have been inserted into the node's subtrees), and $p$ is the total number of non-leaf nodes beneath this node.
+Formally, a tree $T$ consists of the a set of a finite set of nodes,
+indexed by a hash-table, {\Huge TODO}
+a , = consists of a this structure consists of represents
+Nodes are tuples of the form $(c, m, p)$, where $c \in [0, 2^{2^i}]$
+indicates the current bit configuration, $m$ the number of leaf nodes
+(equivalent to the number of unique keys that have been inserted
+into that node's subtrees), and $p$ the total number of non-leaf nodes
+beneath that node.
 
 % TODO - Connections to Van Emde Boas trees & suffix trees
 
+\begin{figure}[t]
+\center
+  %\fbox{
+\includegraphics[width=75mm]{example-vector.pdf}
+%}
+\caption{An example bit-vector for $i=4$.}
+\label{fig:example-vector}
+\end{figure}
+
 \subsubsection{Structure}
-For a tree T over the universe $0$ to $2^m - 1$, the root node encodes $sig_i(key, 0)$ in a bit vector of length $2^i$, with each bit corresponding to one of the $2^i$ combinations possible among $i$ bits.  For example, where $i=4$, the 4-bit sequence 0000 would correspond to the first of the vector's 16 elements.  
+For a tree T over the universe $0$ to $2^m - 1$, the root node
+encodes $sig_i(key, 0)$ in a bit vector of length $2^i$,
+with each bit corresponding to one of the $2^i$ combinations possible
+among $i$ bits.  For example, where $i=4$, the 4-bit sequence {\tt 0000}
+would correspond to the first of the vector's 16 elements.  This is illustrated
+in Figure \ref{fig:example-vector}.
 
 \paragraph{}
-Just as the root node, with depth 0, encodes the sequence $sig_i(key, 0)$, nodes at depth 1 encode the sequence $sig_i(key, 1)$, and, in general, nodes at depth $d$ encode $sig_i(key, d)$; as a result, trees will have a depth of exactly $D$.
-
+Just as the root node, with depth 0, encodes the sequence $sig_i(key, 0)$,
+nodes at depth 1 encode the sequence $sig_i(key, 1)$, and,
+in general, nodes at depth $d$ encode $sig_i(key, d)$.  Nodes at the
+same depth, but which do not share a parent (i.e., ``cousin'' nodes)
+encode the same subsequence of the key space, but necessarily differ
+in the bit sequence which precedes the sequence they encode.  This
+preceding sequence is the node's bit prefix.
 
 \subsubsection{Vector Encoding}
-An ``on" (1) bit in the root node's bit vector indicates the existence of at least one key whose first $i$ bits match the $i$-bit combination indicated by the bit vector.  Correspondingly, an ``off" bit (0) indicates the absence of any such element.  For example, in the case $i=4$, if the root node's bit vector is 1000000000000001, then the tree is guaranteed to contain at least one key $k_1$ with $sig_4(k_1, 0) = 0000$ and at least one key $k_2$ with $sig_4(k_2, 0)=1111$.
+An ``on" ({\tt 1}) bit in the root node's bit vector indicates the existence
+of at least one key whose first $i$ bits match the $i$-bit combination
+indicated by the bit vector.  Correspondingly, an ``off" bit ({\tt 0}) indicates
+the absence of any such element.  For example, in the case $i=4$,
+if the root node's bit vector is {\tt 1000000000000001}, then the tree is
+guaranteed to contain at least one key $k_1$ with $sig_4(k_1, 0) = {\tt 0000}$
+and at least one key $k_2$ with $sig_4(k_2, 0)={\tt 1111}$.
 
-\subsubsection{Branching}
-In a complete tree, at each depth $d$, there would exist $2^{di}$ nodes,
-as each node can have as many as $2^i$ children and as many
-as $2^d - 1$ siblings.
+\subsubsection{Node Hierarchy}
+Unlike typical tree structures, in which a parent node contains
+pointers to its child nodes, nodes in this tree have no direct connection to
+their child nodes.  Instead, a hash table called {\tt Node} is used for random-access to any
+node in tree.  This is possible because every node in the tree (and, more strongly,
+every possible node) can be uniquely specified by its bit-prefix.  For example,
+the bit-prefix {\tt 00000000} specifies the left-most node at a depth of 2, and the
+empty bit-prefix specifies the root (which is the initial position and has no prefix).
 
-\subsubsection{Node To Node Connections}
-The first mapping function
-
-\subsubsection{Local Intersection}
-
-\subsubsection{Buckets}
-
-\subsubsection{Bucket Lookup}
+\subsubsection{Leaves}
+Unlike other nodes, a materialized leaf node contains a table, which, for all keys
+in the node's $2^i$ value range, maps each key to a list of object references.
+This allows for the recovery of all associated objects, for example, the row of
+which this key is a column-value or the class instance of which this key is a member
+variable.
 
 
 
@@ -122,13 +170,65 @@ The first mapping function
 % Operations
 %%%%%%%%%%
 
-\subsection{Operations}
+\subsection{Supplemental Operations}
+
+\begin{figure}[t]
+\center
+\fbox{
+\includegraphics[width=3in]{insertion-05.pdf}
+}
+\caption{Insertion of a key.}
+\label{fig:insertion-diagram}
+\end{figure}
 
 \subsubsection{Insertion}
+Figure \ref{fig:insertion-diagram} outlines the insertion of the key
+{\tt 111011010000000} along with the object of which this key
+is a component.  As described in A, the full key is used with the node-hash
+to access the proper leaf node, and a reference to the accompanying object
+is appended to the list of objects registered to the key.  If the corresponding
+bit is already on, then the insertion operation concludes. If the bit is off, then 
+it is flipped, and the node's member count is incremented.  The leaf node's
+parent is then accessed by splicing off the least-significant $i$-bits from the key.
+It may be the case that this node does not yet exist, in which case an empty
+node is initialized.  In either case, the parent's progeny count is incremented
+and the bit corresponding to the leaf node is queried.  If the bit is already on,
+then the process terminates; otherwise, the bit is flipped and this process advances
+up the tree, terminating after reaching (and, if necessary, updating) the root node.
 
 \subsubsection{Deletion}
+Deletion requires both a key and an object as parameters, as multiple
+objects may be registered to the same key.  The full bit-sequence of the
+key is used with the node-hash to obtain its containing leaf node.
+The list of objects registered to the key is obtained via the node's
+reference table and is scanned for an object that matches the object parameter.
+If a match is found, then the reference is removed.  The list is queried to determine
+whether any objects remain registered to this key, if not, the bit corresponding to the
+key is turned off, and the member count for the node is decremented.
+If this update results in a member count of zero, then the node is decommissioned
+and the tree's node hash for this key is set to null.
 
-\subsubsection{Intersection}
+\paragraph{}
+If the member count was decremented, then the parent node is loaded
+and its member count is decremented.  If the child node was decommissioned,
+then the bit corresponding to that child is turned off and the parent node's
+progeny count is decremented.  As a bit change occurred, the vector is passed
+as a parameter to the mapping function; if the mapping function returns an
+empty list, that indicates that the node has no children remaining, and so it too
+is decommissioned.  The process repeats for each parent node, up to and
+including the root node.
+
+\begin{figure}[b]
+\fbox{
+\includegraphics[width=6in]{intersection-06.pdf}
+}
+\caption{Initial step in the intersection of 3 sets}
+\label{fig:intersection-diagram}
+\end{figure}
+
+\subsection{Intersection}
+\ref{fig:intersection-diagram}
+\subsubsection{Local Intersection}
 
 
 
