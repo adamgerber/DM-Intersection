@@ -8,6 +8,7 @@
 \usepackage{multirow}
 \usepackage{float}
 \usepackage{textcomp}
+\usepackage{enumerate}
 \setlength\titlebox{6.5cm}
 %\renewcommand{\baselinestretch}{0.96}
 
@@ -74,7 +75,7 @@ metric: ratio of operations to results returned
 
 While most papers have described algorithms abstractly, with only a slight reference to their actual application, we propose this algorithm in the framework of a solver such as Prolog or a similar type of solver. We explore the algorithm in the context of returning an intersection, but it could just as easily provide the requestor with an iterator, which when queried could obtain any records associated with the key. A simple example of this would be a query on two tables to find all products that have a coupon (figure X). In this case, the algorithm would return an iterator over pids within the intersection: 
 
-\begin{enumerate}
+\begin{enumerate}[(a)]
 \item	1: (HDD x, a)
 \item	2: (HDD y, b), (HDD y, c)
 \item	4: (RAM a, d)
@@ -83,17 +84,83 @@ While most papers have described algorithms abstractly, with only a slight refer
 
 \subsection{Algorithm}
 
-We introduce a tree structure for storing $m$-bit integer keys, where $m$ must be of the form $m=Di$ for some small integer $D$ and small integer $i=2^n$.  For example, to represent 32-bit integers, one such assignment could $i=2^2=8$ and $D=4$.  As such, it is possible to segment every $m$-bit integer into $d$ contiguous $i$-bit sequences.  We will use the notation $sig_i(key, j)$ to denote a $key$'s $j^{th}$ most significant $i$-bit sequence.  In other words, for any key $k_q$ in the range $2^{Di}$, the following serves as an identity, where $\oplus$ is the append operator:
+We introduce a tree structure for storing $m$-bit integer keys, where $m$ must be of the form $m=Di$ for some small integer $D$ and small integer $i=2^n$.  For example, to represent 32-bit integers, one such assignment could $i=2^3=8$ and $D=4$.  As such, it is possible to segment every $m$-bit integer into $d$ contiguous $i$-bit sequences.  We will use the notation $sig_i(key, j)$ to denote a $key$'s $j^{th}$ most significant $i$-bit sequence.  In other words, for any key $k_q$ in the range $2^{Di}$, the following serves as an identity, where $\oplus$ is the append operator:
 \[ k_q = sig_i(k_q, 0) \oplus sig_i(k_q, 1) \oplus ... \oplus sig_i(k_q, D-1) \]
 
+%TODO finish this formal definition of the tree
+%Formally, a tree $T$ consists of the following components: a finite set $N$ of nodes, a , = consists of a this structure consists of represents nodes as tuples of the form $(c, m, p)$, where $c \in [0, 2^{2^i}]$ indicates the current bit configuration, $m$ is the number of leaf nodes (equivalent to the number of unique keys that have been inserted into the node's subtrees), and $p$ is the total number of non-leaf nodes beneath this node.
+
+% TODO - Connections to Van Emde Boas trees & suffix trees
+
 \subsubsection{Structure}
-For a tree T over the universe $0$ to $2^m - 1$, the root node encodes $sig_i(key, 0)$ in a bit vector of length $2^i$, with each bit corresponding to one of the $2^i$ combinations possible among $i$ bits.  For example, where $i=4$, the four bit sequence 0000 would correspond to the first position in the node's 16-element bit vector.  Just as the root node, with depth 0, encodes the sequence $sig_i(key, 0)$, similarly, nodes at depth 1 encode the sequence $sig_i(key, 1)$, and, in general, nodes at depth $d$ encode $sig_i(key, d)$; as a result, trees will have a depth of exactly $D$.
+For a tree T over the universe $0$ to $2^m - 1$, the root node encodes $sig_i(key, 0)$ in a bit vector of length $2^i$, with each bit corresponding to one of the $2^i$ combinations possible among $i$ bits.  For example, where $i=4$, the 4-bit sequence 0000 would correspond to the first of the vector's 16 elements.  
+
+\paragraph{}
+Just as the root node, with depth 0, encodes the sequence $sig_i(key, 0)$, nodes at depth 1 encode the sequence $sig_i(key, 1)$, and, in general, nodes at depth $d$ encode $sig_i(key, d)$; as a result, trees will have a depth of exactly $D$.
+
 
 \subsubsection{Vector Encoding}
-An ``on" (1) bit in the root node's bit vector indicates the existence of at least one key whose first $i$ bits match the $i$-bit combination indicated by the bit vector. Correspondingly, an ``off" bit (0) indicates the absence of any such element.  For example, in the case $i=4$, if the root node's bit vector is 1000000000000001, then the tree is guaranteed to contain at least one key $k_1$ with $sig_4(k_1, 0) = 0000$ and at least one key $k_2$ with $sig_4(k_2, 0)=1111$.
+An ``on" (1) bit in the root node's bit vector indicates the existence of at least one key whose first $i$ bits match the $i$-bit combination indicated by the bit vector.  Correspondingly, an ``off" bit (0) indicates the absence of any such element.  For example, in the case $i=4$, if the root node's bit vector is 1000000000000001, then the tree is guaranteed to contain at least one key $k_1$ with $sig_4(k_1, 0) = 0000$ and at least one key $k_2$ with $sig_4(k_2, 0)=1111$.
 
 \subsubsection{Branching}
-As each node
+In a complete tree, at each depth $d$, there would exist $2^{di}$ nodes,
+as each node can have as many as $2^i$ children and as many
+as $2^d - 1$ siblings.
+
+\subsubsection{Node To Node Connections}
+The first mapping function
+
+\subsubsection{Local Intersection}
+
+\subsubsection{Buckets}
+
+\subsubsection{Bucket Lookup}
+
+
+
+%%%%%%%%%%
+% Operations
+%%%%%%%%%%
+
+\subsection{Operations}
+
+\subsubsection{Insertion}
+
+\subsubsection{Deletion}
+
+\subsubsection{Intersection}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%Intersect trees ÐÊprune all branches that fail intersection
+%Determine which subtrees to compare
+	
+	
+%Compare subtrees
+%Begin traversing from root
+%	Among all m trees, does any have memberCount of q, where q is a parameter indicating the threshold for direct-value comparison
+%		if so, find the tree least likely to contain a match in that range.  
+%			fewest members
+			
+
+\section{Future Work}
+					
+Encodings that remap dense data to a sparse distribution
+
+Better than 4-bit mappings
+
+
 
 
 \section{Conclusion}
